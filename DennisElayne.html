@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>#DennisElayne2025</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; background-color: #8CACE7; padding: 20px; }
+        #passphrase-container { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.15); text-align: center; }
+        #passphrase-input { padding: 12px 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; margin-right: 10px; }
+        #passphrase-button { padding: 12px 20px; border: none; background-color: #5c67f2; color: white; border-radius: 8px; cursor: pointer; font-size: 16px; }
+        #error-message { color: #d9534f; margin-top: 15px; height: 20px; }
+        .hidden { display: none; }
+        .container { width: 100%; max-width: 800px; padding: 30px; border-radius: 12px; background-color: white; box-shadow: 0 6px 12px rgba(0,0,0,0.1); text-align: center; }
+        h1 { color: #333; margin-bottom: 20px; }
+        #searchInput { width: 100%; padding: 12px 15px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 12px 15px; border-bottom: 1px solid #e0e0e0; }
+        thead th { background-color: #f7f7f7; font-weight: 600; color: #555; }
+        tbody tr:hover { background-color: #f0f0f8; }
+        input[type="checkbox"] { transform: scale(1.5); cursor: pointer; }
+
+        /* --- Mobile Responsiveness --- */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            #passphrase-container, .container {
+                padding: 20px;
+            }
+
+            /* Make passphrase input and button stack vertically for easier use */
+            #passphrase-input {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 10px;
+                box-sizing: border-box;
+            }
+
+            #passphrase-button {
+                width: 100%;
+            }
+
+            h1 {
+                font-size: 1.5em; /* Adjust heading size for smaller screens */
+            }
+
+            /* Reduce padding in table cells to fit more content */
+            th, td {
+                padding: 10px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="passphrase-container">
+        <h1>Welcome</h1>
+        <p>Please enter the passphrase to continue.</p>
+        <input type="password" id="passphrase-input" placeholder="Enter passphrase...">
+        <button id="passphrase-button" onclick="checkPassphrase()">Enter</button>
+        <p id="error-message"></p>
+    </div>
+
+    <div id="main-container" class="container hidden">
+        <h1>Find Your Seats</h1>
+        <input type="text" id="searchInput" onkeyup="filterAndDisplay()" placeholder="Search by first or last name...">
+        <div class="table-container">
+            <table>
+                <thead id="guestTableHeader"></thead>
+                <tbody id="guestTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+        // --- PASTE YOUR FIREBASE CONFIG OBJECT HERE ---
+        const firebaseConfig = {
+        apiKey: "AIzaSyAEu6sfQ3E86-lOA67j5mfprBPEpdxTLHo",
+        authDomain: "denniselaynewedding.firebaseapp.com",
+        projectId: "denniselaynewedding",
+        storageBucket: "denniselaynewedding.firebasestorage.app",
+        messagingSenderId: "827112632613",
+        appId: "1:827112632613:web:9b1c0e5b2590f7dcdeaacc",
+        measurementId: "G-4TRPRR44H8"
+        };
+
+        // --- PASTE YOUR GOOGLE SHEET URL HERE ---
+        const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQWcne-fKGyuFh-ysCOnHbrnWR1jDbNyLaUUd6O0ChGn89Enl3hQUyBJdGBLmp941OZKt0J6lS33WpL/pub?output=csv';
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.checkPassphrase = checkPassphrase;
+        window.filterAndDisplay = filterAndDisplay;
+        window.toggleSouvenir = toggleSouvenir;
+
+        let guestsFromSheet = [];
+        let souvenirStatus = {};
+        let userRole = 'guest';
+
+        function checkPassphrase() {
+            const input = document.getElementById('passphrase-input').value.trim();
+            if (input === '#denniselayne2025') userRole = 'guest';
+            else if (input === 'miart') userRole = 'admin';
+            else {
+                document.getElementById('error-message').textContent = 'Incorrect passphrase.';
+                return;
+            }
+            initApp();
+        }
+        
+        function initApp() {
+            document.getElementById('passphrase-container').classList.add('hidden');
+            document.getElementById('main-container').classList.remove('hidden');
+            fetchSheetData();
+            listenForSouvenirUpdates();
+        }
+
+        async function fetchSheetData() {
+            try {
+                const response = await fetch(sheetUrl);
+                const data = await response.text();
+                const rows = data.split(/\r?\n/).slice(1);
+                guestsFromSheet = rows.map(row => {
+                    const columns = row.split(',');
+                    return {
+                        GuestID: columns[0]?.trim(),
+                        LastName: columns[1]?.trim(),
+                        FirstName: columns[2]?.trim(),
+                        TableNumber: columns[3]?.trim(),
+                    };
+                }).filter(g => g.GuestID); // Filter out empty rows
+                
+                // If a new guest is added to the sheet, ensure they have an entry in Firebase.
+                if (userRole === 'admin') {
+                    await ensureGuestsInFirestore();
+                }
+
+                tryMergeAndDisplay();
+            } catch (error) {
+                console.error("Error fetching sheet data:", error);
+            }
+        }
+
+        function listenForSouvenirUpdates() {
+            const souvenirCol = collection(db, 'souvenir_status');
+            onSnapshot(souvenirCol, (snapshot) => {
+                snapshot.docs.forEach(doc => {
+                    souvenirStatus[doc.id] = doc.data().isReceived;
+                });
+                tryMergeAndDisplay();
+            });
+        }
+        
+        function tryMergeAndDisplay() {
+            // Wait until the main guest list from the sheet is loaded before trying to display.
+            if (guestsFromSheet.length > 0) {
+                filterAndDisplay();
+            }
+        }
+
+        function filterAndDisplay() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filteredGuests = guestsFromSheet.filter(guest => {
+                const fullName = `${guest.FirstName} ${guest.LastName}`.toLowerCase();
+                return fullName.includes(searchTerm);
+            });
+            
+            filteredGuests.sort((a, b) => (a.LastName || '').localeCompare(b.LastName || ''));
+            
+            displayTable(filteredGuests);
+        }
+
+        function displayTable(guestsToDisplay) {
+            const tableHeader = document.getElementById('guestTableHeader');
+            const tableBody = document.getElementById('guestTableBody');
+            tableHeader.innerHTML = '';
+            tableBody.innerHTML = '';
+
+            let headerRow = `<tr><th>Last Name</th><th>First Name</th><th>Table Number</th>`;
+            if (userRole === 'admin') headerRow += `<th>MiArt</th>`;
+            headerRow += `</tr>`;
+            tableHeader.innerHTML = headerRow;
+
+            if (guestsToDisplay.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="${userRole === 'admin' ? 4 : 3}">No results found.</td></tr>`;
+                return;
+            }
+            
+            // Sort guests by last name before displaying
+            guestsToDisplay.sort((a, b) => (a.LastName || '').localeCompare(b.LastName || ''));
+
+            guestsToDisplay.forEach(guest => {
+                const hasSouvenir = souvenirStatus[guest.GuestID] || false;
+                let row = `<tr>
+                    <td>${guest.LastName}</td>
+                    <td>${guest.FirstName}</td>
+                    <td>${guest.TableNumber}</td>`;
+                
+                if (userRole === 'admin') {
+                    const isChecked = hasSouvenir ? 'checked' : '';
+                    row += `<td><input type="checkbox" ${isChecked} onchange="toggleSouvenir('${guest.GuestID}', this.checked)"></td>`;
+                }
+                row += `</tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+        
+        async function toggleSouvenir(guestId, isChecked) {
+            const souvenirRef = doc(db, 'souvenir_status', guestId);
+            try {
+                await updateDoc(souvenirRef, { isReceived: isChecked });
+            } catch (error) {
+                console.error("Error updating souvenir status: ", error);
+            }
+        }
+        
+        // This function ensures that if you add a guest to the sheet, they get a corresponding (false) entry in Firebase automatically.
+        async function ensureGuestsInFirestore() {
+            for (const guest of guestsFromSheet) {
+                if (souvenirStatus[guest.GuestID] === undefined) {
+                    const souvenirRef = doc(db, 'souvenir_status', guest.GuestID);
+                    await setDoc(souvenirRef, { isReceived: false });
+                }
+            }
+        }
+    </script>
+
+</body>
+</html>
+
+
