@@ -57,9 +57,9 @@
 <body>
 
     <div id="passphrase-container">
-        <h1>Welcome</h1>
-        <p>Please enter the passphrase to continue.</p>
-        <input type="password" id="passphrase-input" placeholder="Enter passphrase...">
+        <h1>Welcome!</h1>
+        <p>Please enter the passphrase 'denniselayne' </p>
+        <input type="password" id="passphrase-input" placeholder="Enter denniselayne...">
         <button id="passphrase-button" onclick="checkPassphrase()">Enter</button>
         <p id="error-message"></p>
     </div>
@@ -106,7 +106,7 @@
 
         function checkPassphrase() {
             const input = document.getElementById('passphrase-input').value.trim();
-            if (input === '#denniselayne2025') userRole = 'guest';
+            if (input === 'denniselayne') userRole = 'guest';
             else if (input === 'miart') userRole = 'admin';
             else {
                 document.getElementById('error-message').textContent = 'Incorrect passphrase.';
