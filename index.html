@@ -11,14 +11,34 @@
         #passphrase-button { padding: 12px 20px; border: none; background-color: #5c67f2; color: white; border-radius: 8px; cursor: pointer; font-size: 16px; }
         #error-message { color: #d9534f; margin-top: 15px; height: 20px; }
         .hidden { display: none; }
-        .container { width: 100%; max-width: 800px; padding: 30px; border-radius: 12px; background-color: white; box-shadow: 0 6px 12px rgba(0,0,0,0.1); text-align: center; }
+        
+        /* --- MODIFIED CONTAINER COLOR --- */
+        .container { 
+            width: 100%; 
+            max-width: 800px; 
+            padding: 30px; 
+            border-radius: 12px; 
+            /* Changed from white to match the image background */
+            background-color: #fffcf7; 
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1); 
+            text-align: center; 
+        }
+
+        /* --- NEW STYLE FOR THE HEADER IMAGE --- */
+        .header-image {
+            width: 100%;
+            max-width: 400px; /* Adjust size as needed */
+            height: auto;
+            margin-bottom: 20px;
+        }
+
         h1 { color: #333; margin-bottom: 20px; }
         #searchInput { width: 100%; padding: 12px 15px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
         .table-container { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; text-align: left; }
         th, td { padding: 12px 15px; border-bottom: 1px solid #e0e0e0; }
         thead th { background-color: #f7f7f7; font-weight: 600; color: #555; }
-        tbody tr:hover { background-color: #f0f0f8; }
+        tbody tr:hover { background-color: #EAE8E4; } /* Adjusted hover color */
         input[type="checkbox"] { transform: scale(1.5); cursor: pointer; }
 
         /* --- Mobile Responsiveness --- */
@@ -65,7 +85,13 @@
     </div>
 
     <div id="main-container" class="container hidden">
-        <h1>Find Your Seats</h1>
+        
+
+        <!-- --- NEW HEADER IMAGE ADDED HERE --- -->
+        <img src="header-image.png" alt="Dennis and Elayne Wedding" class="header-image">
+
+        
+
         <input type="text" id="searchInput" onkeyup="filterAndDisplay()" placeholder="Search by first or last name...">
         <div class="table-container">
             <table>
@@ -137,7 +163,6 @@
                     };
                 }).filter(g => g.GuestID); // Filter out empty rows
                 
-                // If a new guest is added to the sheet, ensure they have an entry in Firebase.
                 if (userRole === 'admin') {
                     await ensureGuestsInFirestore();
                 }
@@ -159,7 +184,6 @@
         }
         
         function tryMergeAndDisplay() {
-            // Wait until the main guest list from the sheet is loaded before trying to display.
             if (guestsFromSheet.length > 0) {
                 filterAndDisplay();
             }
@@ -193,7 +217,6 @@
                 return;
             }
             
-            // Sort guests by last name before displaying
             guestsToDisplay.sort((a, b) => (a.LastName || '').localeCompare(b.LastName || ''));
 
             guestsToDisplay.forEach(guest => {
@@ -221,7 +244,6 @@
             }
         }
         
-        // This function ensures that if you add a guest to the sheet, they get a corresponding (false) entry in Firebase automatically.
         async function ensureGuestsInFirestore() {
             for (const guest of guestsFromSheet) {
                 if (souvenirStatus[guest.GuestID] === undefined) {
@@ -234,5 +256,4 @@
 
 </body>
 </html>
-
 
